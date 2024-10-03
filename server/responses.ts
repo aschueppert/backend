@@ -1,4 +1,5 @@
 import { Authing } from "./app";
+import { DraftDoc } from "./concepts/drafting";
 import { AlreadyFriendsError, FriendNotFoundError, FriendRequestAlreadyExistsError, FriendRequestDoc, FriendRequestNotFoundError } from "./concepts/friending";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/posting";
 import { Router } from "./framework/router";
@@ -17,6 +18,21 @@ export default class Responses {
     }
     const author = await Authing.getUserById(post.author);
     return { ...post, author: author.username };
+  }
+
+  static async draft(draft: DraftDoc | null) {
+    if (!draft) {
+      return draft;
+    }
+    const author_names = [];
+    console.log(typeof draft.members)
+    for (const user of draft.members) {
+        const author = await Authing.getUserById(user);
+        author_names.push(author.username); // Collect author data
+    }
+
+    return { ...draft, members:author_names };
+    
   }
 
   /**

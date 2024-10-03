@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Authing, Friending, Posting, Sessioning } from "./app";
+import { Authing, Drafting, Friending, Posting, Saving, Sessioning } from "./app";
 import { PostOptions } from "./concepts/posting";
 import { SessionDoc } from "./concepts/sessioning";
 import Responses from "./responses";
@@ -83,11 +83,45 @@ class Routes {
     return Responses.posts(posts);
   }
 
+  @Router.get("/drafts")
+  @Router.validate(z.object({ author: z.string().optional() }))
+  async getDrafts(author?: string) {
+    let drafts;
+    if (author) {
+      const id = (await Authing.getUserByUsername(author))._id;
+      drafts = await Drafting.getByMember(id);
+    } else {
+      drafts = await Drafting.getDrafts();
+    }
+    return drafts;
+  }
+
+
+  @Router.get("/saved")
+  @Router.validate(z.object({ author: z.string().optional() }))
+  async getSaved(author?: string) {
+    let saved;
+    if (author) {
+      const id = (await Authing.getUserByUsername(author))._id;
+      saved = await Saving.getByAuthor(id);
+    } else {
+      saved = await Saving.getSaved();
+    }
+    return saved;
+  }
+
   @Router.post("/posts")
   async createPost(session: SessionDoc, content: string, options?: PostOptions) {
     const user = Sessioning.getUser(session);
     const created = await Posting.create(user, content, options);
     return { msg: created.msg, post: await Responses.post(created.post) };
+  }
+
+  @Router.post("/drafts")
+  async createDraft(session: SessionDoc,content: string,) {
+    const user = Sessioning.getUser(session);
+    const created = await Drafting.create(user, content);
+    return created;
   }
 
   @Router.patch("/posts/:id")
@@ -98,12 +132,65 @@ class Routes {
     return await Posting.update(oid, content, options);
   }
 
+  @Router.patch("/drafts/select/:id")
+  async selectContent(session: SessionDoc, id: string, content: string) {
+    const user = Sessioning.getUser(session);
+    const draft_id = new ObjectId(id);
+    await Drafting.assertUserIsMember(draft_id, user);
+    return await Drafting.select(draft_id,content);
+  }
+
+  @Router.patch("/drafts/deselect/:id")
+  async deselectContent(session: SessionDoc, id: string, content: string) {
+    const user = Sessioning.getUser(session);
+    const draft_id = new ObjectId(id);
+    await Drafting.assertUserIsMember(draft_id, user);
+    return await Drafting.deselect(draft_id,content);
+  }
+
+  @Router.patch("/drafts/add/:id")
+  async addContent(session: SessionDoc, id: string, content: string) {
+    const user = Sessioning.getUser(session);
+    const draft_id = new ObjectId(id);
+    await Drafting.assertUserIsMember(draft_id, user);
+    return await Drafting.addContent(draft_id,content);
+  }
+  
+  @Router.patch("/drafts/:id")
+  async addDraftMember(session: SessionDoc, id: string, member: string) {
+    const other_id = (await Authing.getUserByUsername(member))._id;
+    //const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    return await Drafting.addMember(oid,other_id);
+  }
+
   @Router.delete("/posts/:id")
   async deletePost(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
     await Posting.assertAuthorIsUser(oid, user);
     return Posting.delete(oid);
+  }
+
+  @Router.delete("/drafts/:id")
+  async deleteDraft(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    await Drafting.assertUserIsMember(oid, user);
+    return Drafting.delete(oid);
+  }
+  @Router.post("/save")
+  async createSave(session: SessionDoc, name: string) {
+    const user = Sessioning.getUser(session);
+    return await Saving.create(user,name);
+  }
+  
+  @Router.patch("/save")
+  async savePost(session: SessionDoc, post_id:string, name: string, ) {
+    const post_oid = new ObjectId(post_id);
+    const user = Sessioning.getUser(session);
+    const save_oid= (await Saving.getSave(user,name))._id;
+    return Saving.save(save_oid,post_oid);
   }
 
   @Router.get("/friends")

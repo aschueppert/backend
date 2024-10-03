@@ -63,8 +63,28 @@ const operations: Operation[] = [
     fields: { author: "input" },
   },
   {
+    name: "Get Drafts (empty for all)",
+    endpoint: "/api/drafts",
+    method: "GET",
+    fields: { author: "input" },
+  },
+
+  {
+    name: "Get Saved (empty for all)",
+    endpoint: "/api/saved",
+    method: "GET",
+    fields: { author: "input" },
+  },
+
+  {
     name: "Create Post",
     endpoint: "/api/posts",
+    method: "POST",
+    fields: { content: "input" },
+  },
+  {
+    name: "Create Draft",
+    endpoint: "/api/drafts",
     method: "POST",
     fields: { content: "input" },
   },
@@ -74,11 +94,63 @@ const operations: Operation[] = [
     method: "PATCH",
     fields: { id: "input", content: "input", options: { backgroundColor: "input" } },
   },
+
+  {
+    name: "Add Draft Members",
+    endpoint: "/api/drafts/:id",
+    method: "PATCH",
+    fields: { id: "input", member: "input"},
+  },
+
+  {
+    name: "Add Draft Content",
+    endpoint: "/api/drafts/add/:id",
+    method: "PATCH",
+    fields: { id: "input", content: "input"},
+  },
+
+  {
+    name: "Select Draft Content",
+    endpoint: "/api/drafts/select/:id",
+    method: "PATCH",
+    fields: { id: "input", content: "input"},
+  },
+
+  {
+    name: "Deselect Draft Content",
+    endpoint: "/api/drafts/deselect/:id",
+    method: "PATCH",
+    fields: { id: "input", content: "input"},
+  },
+
+
+  {
+    name: "Create Save Label",
+    endpoint: "/api/save",
+    method: "POST",
+    fields: { name: "input"},
+  },
+
+  {
+    name: "Save Post",
+    endpoint: "/api/save",
+    method: "PATCH",
+    fields: { post_id: "input", name:"input"},
+  },
+
+
   {
     name: "Delete Post",
     endpoint: "/api/posts/:id",
     method: "DELETE",
     fields: { id: "input" },
+  },
+  {
+    name: "Delete Draft",
+    endpoint: "/api/drafts/:id",
+    method: "DELETE",
+    fields: { id: "input" },
+
   },
   //
   // ...
