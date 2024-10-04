@@ -13,34 +13,19 @@ export default class Responses {
    * Convert PostDoc into more readable format for the frontend by converting the author id into a username.
    */
   static async post(post: PostDoc | null) {
-    if (!post) {
-      return post;
-    }
-    const author = await Authing.getUserById(post.author);
-    return { ...post, author: author.username };
+    return
+   
   }
 
   static async draft(draft: DraftDoc | null) {
-    if (!draft) {
-      return draft;
-    }
-    const author_names = [];
-    console.log(typeof draft.members)
-    for (const user of draft.members) {
-        const author = await Authing.getUserById(user);
-        author_names.push(author.username); // Collect author data
-    }
-
-    return { ...draft, members:author_names };
-    
+    return
   }
 
   /**
    * Same as {@link post} but for an array of PostDoc for improved performance.
    */
   static async posts(posts: PostDoc[]) {
-    const authors = await Authing.idsToUsernames(posts.map((post) => post.author));
-    return posts.map((post, i) => ({ ...post, author: authors[i] }));
+    return
   }
 
   /**

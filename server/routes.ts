@@ -3,7 +3,6 @@ import { ObjectId } from "mongodb";
 import { Router, getExpressRouter } from "./framework/router";
 
 import { Authing, Drafting, Friending, Posting, Saving, Sessioning } from "./app";
-import { PostOptions } from "./concepts/posting";
 import { SessionDoc } from "./concepts/sessioning";
 import Responses from "./responses";
 
@@ -80,7 +79,7 @@ class Routes {
     } else {
       posts = await Posting.getPosts();
     }
-    return Responses.posts(posts);
+    return posts;
   }
 
   @Router.get("/drafts")
@@ -110,12 +109,18 @@ class Routes {
     return saved;
   }
 
+
   @Router.post("/posts")
-  async createPost(session: SessionDoc, content: string, options?: PostOptions) {
+  async convertDraft(session:SessionDoc,draft_id:string){
     const user = Sessioning.getUser(session);
-    const created = await Posting.create(user, content, options);
-    return { msg: created.msg, post: await Responses.post(created.post) };
+    const draft_oid = new ObjectId(draft_id);
+    const content=await Drafting.getContent(draft_oid)
+    const members=await Drafting.getMembers(draft_oid)
+    const created = await Posting.create(members, content);
+    return created;
+    
   }
+
 
   @Router.post("/drafts")
   async createDraft(session: SessionDoc,content: string,) {
@@ -124,12 +129,19 @@ class Routes {
     return created;
   }
 
-  @Router.patch("/posts/:id")
-  async updatePost(session: SessionDoc, id: string, content?: string, options?: PostOptions) {
-    const user = Sessioning.getUser(session);
-    const oid = new ObjectId(id);
-    await Posting.assertAuthorIsUser(oid, user);
-    return await Posting.update(oid, content, options);
+  @Router.post("/events")
+  async createEvent(session: SessionDoc, post_id:String) {
+    return
+  }
+
+  @Router.patch("/events/:id")
+  async rsvpEvent(session: SessionDoc, event_id:String) {
+    return
+  }
+
+  @Router.get("/events/:id")
+  async getEventAttendees(session: SessionDoc, event_id:String) {
+    return
   }
 
   @Router.patch("/drafts/select/:id")
@@ -147,6 +159,15 @@ class Routes {
     await Drafting.assertUserIsMember(draft_id, user);
     return await Drafting.deselect(draft_id,content);
   }
+
+  @Router.patch("/posts/:id")
+  async approve(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const post_id = new ObjectId(id);
+    //await Posting.assertUserIsApprover(post_id, user);
+    return await Posting.approvePost(user,post_id);
+  }
+
 
   @Router.patch("/drafts/add/:id")
   async addContent(session: SessionDoc, id: string, content: string) {
@@ -168,7 +189,7 @@ class Routes {
   async deletePost(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
-    await Posting.assertAuthorIsUser(oid, user);
+    await Posting.assertUserIsApprover(oid, user);
     return Posting.delete(oid);
   }
 

@@ -8,8 +8,10 @@ export interface PostOptions {
 }
 
 export interface PostDoc extends BaseDoc {
-  author: ObjectId;
-  content: string;
+  approvers: Array<ObjectId>;
+  content: Array<String>;
+  approved:Array<ObjectId>
+  status:String
   options?: PostOptions;
 }
 
@@ -26,8 +28,9 @@ export default class PostingConcept {
     this.posts = new DocCollection<PostDoc>(collectionName);
   }
 
-  async create(author: ObjectId, content: string, options?: PostOptions) {
-    const _id = await this.posts.createOne({ author, content, options });
+  async create(approvers: Array<ObjectId>, content: Array<String>) {
+    const approved=new Array<ObjectId>()
+    const _id = await this.posts.createOne({ approvers, content, approved,status:"Not Approved"});
     return { msg: "Post successfully created!", post: await this.posts.readOne({ _id }) };
   }
 
@@ -36,29 +39,38 @@ export default class PostingConcept {
     return await this.posts.readMany({}, { sort: { _id: -1 } });
   }
 
-  async getByAuthor(author: ObjectId) {
-    return await this.posts.readMany({ author });
+  async approvePost(u:ObjectId, post_id:ObjectId){
+    const post=await this.posts.readOne({ post_id }) 
+    if (!post) {
+      throw new NotFoundError(`Post ${post_id} does not exist!`);
+    }
+    post.approved.push(u)
+    let approved=post.approved
+    let status=post.status
+    if (post.approved.length==post.approvers.length){
+        status="Approved"
+    }
+    await this.posts.partialUpdateOne({ post_id }, {approved, status});
   }
 
-  async update(_id: ObjectId, content?: string, options?: PostOptions) {
-    // Note that if content or options is undefined, those fields will *not* be updated
-    // since undefined values for partialUpdateOne are ignored.
-    await this.posts.partialUpdateOne({ _id }, { content, options });
-    return { msg: "Post successfully updated!" };
+  async getByAuthor(author: ObjectId) {
+    return await this.posts.readMany({approvers: author});
   }
+
 
   async delete(_id: ObjectId) {
     await this.posts.deleteOne({ _id });
     return { msg: "Post deleted successfully!" };
   }
 
-  async assertAuthorIsUser(_id: ObjectId, user: ObjectId) {
+  async assertUserIsApprover(_id: ObjectId, user: ObjectId) {
     const post = await this.posts.readOne({ _id });
     if (!post) {
       throw new NotFoundError(`Post ${_id} does not exist!`);
     }
-    if (post.author.toString() !== user.toString()) {
-      throw new PostAuthorNotMatchError(user, _id);
+
+    if (!post.approvers.map(String).includes(String(user))) {
+      throw new NotFoundError(`User not in post`);
     }
   }
 }

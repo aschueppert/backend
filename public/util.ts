@@ -80,19 +80,13 @@ const operations: Operation[] = [
     name: "Create Post",
     endpoint: "/api/posts",
     method: "POST",
-    fields: { content: "input" },
+    fields: { draft_id: "input" },
   },
   {
     name: "Create Draft",
     endpoint: "/api/drafts",
     method: "POST",
     fields: { content: "input" },
-  },
-  {
-    name: "Update Post",
-    endpoint: "/api/posts/:id",
-    method: "PATCH",
-    fields: { id: "input", content: "input", options: { backgroundColor: "input" } },
   },
 
   {
@@ -123,6 +117,12 @@ const operations: Operation[] = [
     fields: { id: "input", content: "input"},
   },
 
+  {
+    name: "Approve Post",
+    endpoint: "/api/posts/:id",
+    method: "PATCH",
+    fields: { id: "input"},
+  },
 
   {
     name: "Create Save Label",

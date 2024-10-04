@@ -11,7 +11,7 @@ export interface SaveDoc extends BaseDoc {
 
 
 /**
- * concept: Posting [Author]
+ * concept: Saving [Post]
  */
 export default class SaveConcept {
     public readonly saved: DocCollection<SaveDoc>;
