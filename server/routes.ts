@@ -116,6 +116,7 @@ class Routes {
     const draft_oid = new ObjectId(draft_id);
     const content=await Drafting.getContent(draft_oid)
     const members=await Drafting.getMembers(draft_oid)
+    
     const created = await Posting.create(members, content);
     return created;
     
