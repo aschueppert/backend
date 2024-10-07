@@ -160,12 +160,12 @@ class Routes {
     return await Drafting.deselect(draft_id,content);
   }
 
-  @Router.patch("/posts/:id")
+  @Router.patch("/posts/approve/:id")
   async approve(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
     const post_id = new ObjectId(id);
-    //await Posting.assertUserIsApprover(post_id, user);
-    return await Posting.approvePost(user,post_id);
+    await Posting.assertUserCanApprove(post_id, user);
+    return await Posting.approvePost(post_id,user);
   }
 
 
@@ -185,7 +185,7 @@ class Routes {
     return await Drafting.addMember(oid,other_id);
   }
 
-  @Router.delete("/posts/:id")
+  @Router.delete("/posts/delete/:id")
   async deletePost(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);

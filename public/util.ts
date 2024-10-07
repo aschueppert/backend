@@ -119,7 +119,7 @@ const operations: Operation[] = [
 
   {
     name: "Approve Post",
-    endpoint: "/api/posts/:id",
+    endpoint: "/api/posts/approve/:id",
     method: "PATCH",
     fields: { id: "input"},
   },
@@ -141,7 +141,7 @@ const operations: Operation[] = [
 
   {
     name: "Delete Post",
-    endpoint: "/api/posts/:id",
+    endpoint: "/api/posts/delete/:id",
     method: "DELETE",
     fields: { id: "input" },
   },

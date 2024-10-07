@@ -39,10 +39,10 @@ export default class PostingConcept {
     return await this.posts.readMany({}, { sort: { _id: -1 } });
   }
 
-  async approvePost(u:ObjectId, post_id:ObjectId){
-    const post=await this.posts.readOne({ post_id }) 
+  async approvePost(_id: ObjectId, u: ObjectId){
+    const post=await this.posts.readOne({_id }) 
     if (!post) {
-      throw new NotFoundError(`Post ${post_id} does not exist!`);
+      throw new NotFoundError(`Post ${_id} does not exist!`);
     }
     post.approved.push(u)
     let approved=post.approved
@@ -50,7 +50,8 @@ export default class PostingConcept {
     if (post.approved.length==post.approvers.length){
         status="Approved"
     }
-    await this.posts.partialUpdateOne({ post_id }, {approved, status});
+    return await this.posts.partialUpdateOne({_id }, {approved, status});
+    
   }
 
   async getByAuthor(author: ObjectId) {
@@ -73,6 +74,15 @@ export default class PostingConcept {
       throw new NotFoundError(`User not in post`);
     }
   }
+
+  async assertUserCanApprove(_id: ObjectId, user: ObjectId) {
+    this.assertUserIsApprover(_id,user)
+    const post = await this.posts.readOne({ _id });
+    if (post?.approved.map(String).includes(String(user))) {
+      throw new NotAllowedError(`User already approved post`);
+    }
+  }
+
 }
 
 export class PostAuthorNotMatchError extends NotAllowedError {
@@ -83,3 +93,4 @@ export class PostAuthorNotMatchError extends NotAllowedError {
     super("{0} is not the author of post {1}!", author, _id);
   }
 }
+
