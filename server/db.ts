@@ -12,7 +12,6 @@ export const client = new MongoClient(mongoUri, {
     deprecationErrors: true,
   },
 });
-
 export let DB_NAME: string;
 if (process.env.TEST) {
   DB_NAME = "test-db"; // Used only for unit-tests
