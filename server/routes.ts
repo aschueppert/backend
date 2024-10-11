@@ -2,9 +2,8 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Authing, Drafting, Events, Friending, Posting, Saving, Sessioning } from "./app";
+import { Authing, Drafting, Events, Following, Posting, Saving, Sessioning } from "./app";
 import { SessionDoc } from "./concepts/sessioning";
-import Responses from "./responses";
 
 import { z } from "zod";
 
@@ -72,8 +71,13 @@ class Routes {
 
   @Router.get("/posts")
   @Router.validate(z.object({ author: z.string().optional() , theme: z.string().optional(), status: z.string().optional()}))
-  async getPosts(author?: string, theme?: string, status?: string) {
+  async getPosts(session: SessionDoc, author?: string, theme?: string, status?: string) {
+    const user = Sessioning.getUser(session);
+    let following=await Following.getFollowing(user);
     let posts = await Posting.getPosts()
+    posts = posts.filter(post =>
+      post.approvers.some(member => following.map(String).includes(String(member)))
+    );
     if (author) {
       const id = (await Authing.getUserByUsername(author))._id;
       let author_posts = await Posting.getByAuthor(id);
@@ -91,41 +95,32 @@ class Routes {
   }
 
   @Router.get("/drafts")
-  @Router.validate(z.object({ author: z.string().optional() }))
-  async getDrafts(author?: string) {
-    let drafts;
-    if (author) {
-      const id = (await Authing.getUserByUsername(author))._id;
-      drafts = await Drafting.getByMember(id);
-    } else {
-      drafts = await Drafting.getDrafts();
-    }
+  async getDrafts(session: SessionDoc) {
+    const user = Sessioning.getUser(session);
+    let drafts = await Drafting.getByMember(user);
     return drafts;
   }
 
 
   @Router.get("/saved")
-  @Router.validate(z.object({ author: z.string().optional() }))
-  async getSaved(author?: string) {
-    let saved;
-    if (author) {
-      const id = (await Authing.getUserByUsername(author))._id;
-      saved = await Saving.getByAuthor(id);
-    } else {
-      saved = await Saving.getSaved();
-    }
+  async getSaved(session: SessionDoc) {
+    const user = Sessioning.getUser(session);
+    let saved = await Saving.getByAuthor(user);
     return saved;
   }
   @Router.get("/events")
-  @Router.validate(z.object({ author: z.string().optional() }))
-  async getEvents(author?: string) {
-    let events;
-    if (author) {
-      const id = (await Authing.getUserByUsername(author))._id;
-      events = await Events.getByHost(id);
-    } else {
-      events = await Events.getEvents();
-    }
+  @Router.validate(z.object({ host: z.string().optional() }))
+  async getEvents(session: SessionDoc,host?: string) {
+    let following=await Following.getFollowing(Sessioning.getUser(session));
+    let events = await Events.getEvents()
+    events = events.filter(event =>
+      event.hosts.some(member => following.map(String).includes(String(member)))
+    );
+    if (host) {
+      const id = (await Authing.getUserByUsername(host))._id;
+      let host_events = await Events.getByHost(id);
+      events = events.filter(event => host_events.map(String).includes(String(event)));
+    } 
     return events;
   }
 
@@ -265,52 +260,30 @@ class Routes {
     return Saving.save(save_oid,oid);
   }
 
-  @Router.get("/friends")
-  async getFriends(session: SessionDoc) {
+  @Router.get("/follows")
+  async getFollowing(session: SessionDoc) {
     const user = Sessioning.getUser(session);
-    return await Authing.idsToUsernames(await Friending.getFriends(user));
+    return await Following.getFollowing(user);
   }
 
-  @Router.delete("/friends/:friend")
-  async removeFriend(session: SessionDoc, friend: string) {
+  
+  @Router.post("/follows")
+  async follow(session: SessionDoc, username:string) {
     const user = Sessioning.getUser(session);
-    const friendOid = (await Authing.getUserByUsername(friend))._id;
-    return await Friending.removeFriend(user, friendOid);
+    const following = (await Authing.getUserByUsername(username))._id;
+    await Following.assertIsNotFollowing(user, following);
+    return await Following.follow(user, following);
   }
 
-  @Router.get("/friend/requests")
-  async getRequests(session: SessionDoc) {
+  @Router.delete("/follows/:follow")
+  async unfollow(session: SessionDoc, username: string) {
     const user = Sessioning.getUser(session);
-    return await Responses.friendRequests(await Friending.getRequests(user));
+    const friendOid = (await Authing.getUserByUsername(username))._id;
+    await Following.assertIsFollowing(user, friendOid);
+    return await Following.unfollow(user, friendOid);
   }
 
-  @Router.post("/friend/requests/:to")
-  async sendFriendRequest(session: SessionDoc, to: string) {
-    const user = Sessioning.getUser(session);
-    const toOid = (await Authing.getUserByUsername(to))._id;
-    return await Friending.sendRequest(user, toOid);
-  }
 
-  @Router.delete("/friend/requests/:to")
-  async removeFriendRequest(session: SessionDoc, to: string) {
-    const user = Sessioning.getUser(session);
-    const toOid = (await Authing.getUserByUsername(to))._id;
-    return await Friending.removeRequest(user, toOid);
-  }
-
-  @Router.put("/friend/accept/:from")
-  async acceptFriendRequest(session: SessionDoc, from: string) {
-    const user = Sessioning.getUser(session);
-    const fromOid = (await Authing.getUserByUsername(from))._id;
-    return await Friending.acceptRequest(fromOid, user);
-  }
-
-  @Router.put("/friend/reject/:from")
-  async rejectFriendRequest(session: SessionDoc, from: string) {
-    const user = Sessioning.getUser(session);
-    const fromOid = (await Authing.getUserByUsername(from))._id;
-    return await Friending.rejectRequest(fromOid, user);
-  }
 }
 
 /** The web app. */

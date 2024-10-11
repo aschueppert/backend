@@ -63,10 +63,10 @@ const operations: Operation[] = [
     fields: { author: "input" ,theme: "input", status: "input" },
   },
   {
-    name: "Get Drafts (empty for all)",
+    name: "Get Drafts",
     endpoint: "/api/drafts",
     method: "GET",
-    fields: { author: "input" },
+    fields: { },
   },
   {
     name: "Get Events (empty for all)",
@@ -193,56 +193,23 @@ const operations: Operation[] = [
   },
 
   {
-    name: "Send Friend Request",
-    endpoint: "/api/friend/requests/:to",
+    name: "Get Following",
+    endpoint: "/api/follows",
+    method: "GET",
+    fields: { username: "input" },
+  },
+  {
+    name: "Follow",
+    endpoint: "/api/follows",
     method: "POST",
-    fields: { to: "input" },
-  },
-
-  {
-    name: "Accept Friend Request",
-    endpoint: "/api/friend/accept/:from",
-    method: "PUT",
-    fields: { from: "input" },
+    fields: { username: "input" },
   },
   {
-    name: "Reject Friend Request",
-    endpoint: "/api/friend/reject/:from",
-    method: "PUT",
-    fields: { from: "input" },
-  },
-
-  {
-    name: "Remove Friend Request",
-    endpoint: "/api/friend/requests/:to",
+    name: "Unfollow",
+    endpoint: "/api/follows/:follow",
     method: "DELETE",
-    fields: { to: "input" },
+    fields: { follow: "input" },
   },
-  //get friend request
-  {
-    name: "Get Friend Requests",
-    endpoint: "/api/friend/requests",
-    method: "GET",
-    fields: {},
-  },
-
-  // get friends 
-  {
-    name: "Get Friends",
-    endpoint: "/api/friends",
-    method: "GET",
-    fields: {},
-  },
-  //remove friend
-  {
-    name: "Remove Friend",
-    endpoint: "/api/friends/:friend",
-    method: "DELETE",
-    fields: { friend: "input" },
-  },
-  //
-  // ...
-  //
 ];
 
 /*
