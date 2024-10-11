@@ -7,11 +7,16 @@ export interface PostOptions {
   backgroundColor?: string;
 }
 
+const themes=["event","news","music","theatre","art","sports","food","fashion","technology",
+  "politics","science","health","education","travel","lifestyle","television","film","literature",
+  "comics","games","hobbies","crafts","pets","gardening","sports"]
+
 export interface PostDoc extends BaseDoc {
   approvers: Array<ObjectId>;
   content: Array<String>;
   approved:Array<ObjectId>
-  status:String
+  status:String;
+  theme:String;
   options?: PostOptions;
 }
 
@@ -30,7 +35,8 @@ export default class PostingConcept {
 
   async create(approvers: Array<ObjectId>, content: Array<String>) {
     const approved=new Array<ObjectId>()
-    const _id = await this.posts.createOne({ approvers, content, approved,status:"Not Approved"});
+    const theme="none"
+    const _id = await this.posts.createOne({ approvers, content, approved,status:"Not Approved",theme});
     return { msg: "Post successfully created!", post: await this.posts.readOne({ _id }) };
   }
 
@@ -50,14 +56,39 @@ export default class PostingConcept {
     if (post.approved.length==post.approvers.length){
         status="Approved"
     }
-    return await this.posts.partialUpdateOne({_id }, {approved, status});
+    await this.posts.partialUpdateOne({_id }, {approved, status});
+    return { msg: "Post successfully approved!" };
     
+  }
+
+  async getByTheme(theme: string) {
+    return await this.posts.readMany({theme});
+  }
+
+  async getByStatus(status: string) {
+    return await this.posts.readMany({status});
+  }
+
+  async setTheme(_id: ObjectId, theme: string){
+    const post=await this.posts.readOne({_id }) 
+    if (!post) {
+      throw new NotFoundError(`Post ${_id} does not exist!`);
+    }
+    await this.posts.partialUpdateOne({_id }, {theme});
+    return { msg: "Theme successfully set!" };
   }
 
   async getByAuthor(author: ObjectId) {
     return await this.posts.readMany({approvers: author});
   }
+  async getApprovers(_id: ObjectId) {
+    const post = await this.posts.readOne({ _id });
+    if (!post) {
+      throw new NotFoundError(`Post ${_id} does not exist!`);
+    }
 
+    return post.approvers;
+  }
 
   async delete(_id: ObjectId) {
     await this.posts.deleteOne({ _id });
@@ -69,9 +100,8 @@ export default class PostingConcept {
     if (!post) {
       throw new NotFoundError(`Post ${_id} does not exist!`);
     }
-
     if (!post.approvers.map(String).includes(String(user))) {
-      throw new NotFoundError(`User not in post`);
+      throw new PostAuthorNotMatchError(user, _id);
     }
   }
 
@@ -83,6 +113,12 @@ export default class PostingConcept {
     }
   }
 
+  async assertThemeIsValid(theme: string) {
+    if (!themes.includes(theme)) {
+      throw new ThemeNotAllowed(theme);
+    }
+  }
+
 }
 
 export class PostAuthorNotMatchError extends NotAllowedError {
@@ -90,7 +126,14 @@ export class PostAuthorNotMatchError extends NotAllowedError {
     public readonly author: ObjectId,
     public readonly _id: ObjectId,
   ) {
-    super("{0} is not the author of post {1}!", author, _id);
+    super("{0} is not an author of post {1}!", author, _id);
   }
 }
-//fix
+
+export class ThemeNotAllowed extends NotAllowedError {
+  constructor(
+    public readonly theme: string,
+  ) {
+    super("{0} is not in the allowed theme list!", theme);
+  }
+}

@@ -1,9 +1,10 @@
 import { Authing } from "./app";
-import { DraftDoc } from "./concepts/drafting";
+import { DraftAuthorNotMatchError, DraftDoc } from "./concepts/drafting";
+import { EventHostNotMatchError } from "./concepts/events";
 import { AlreadyFriendsError, FriendNotFoundError, FriendRequestAlreadyExistsError, FriendRequestDoc, FriendRequestNotFoundError } from "./concepts/friending";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/posting";
+import { SaveAuthorNotMatchError } from "./concepts/saving";
 import { Router } from "./framework/router";
-
 /**
  * This class does useful conversions for the frontend.
  * For example, it converts a {@link PostDoc} into a more readable format for the frontend.
@@ -41,6 +42,21 @@ export default class Responses {
 }
 
 Router.registerError(PostAuthorNotMatchError, async (e) => {
+  const username = (await Authing.getUserById(e.author)).username;
+  return e.formatWith(username, e._id);
+});
+
+Router.registerError(DraftAuthorNotMatchError, async (e) => {
+  const username = (await Authing.getUserById(e.author)).username;
+  return e.formatWith(username, e._id);
+});
+
+Router.registerError(EventHostNotMatchError, async (e) => {
+  const username = (await Authing.getUserById(e.host)).username;
+  return e.formatWith(username, e._id);
+});
+
+Router.registerError(SaveAuthorNotMatchError, async (e) => {
   const username = (await Authing.getUserById(e.author)).username;
   return e.formatWith(username, e._id);
 });

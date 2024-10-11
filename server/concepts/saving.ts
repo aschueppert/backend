@@ -50,7 +50,7 @@ export default class SaveConcept {
     async getSave(author: ObjectId,name:String) {
       let save= await this.saved.readOne({author,name})
       if (!save) {
-        throw new NotFoundError(`Save  does not exist!`);
+        throw new NotFoundError(`Save does not exist!`);
       }
 
       return save;

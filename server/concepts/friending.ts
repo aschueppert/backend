@@ -102,6 +102,18 @@ export default class FriendingConcept {
     }
   }
 
+  async assertFriends(u1: ObjectId, u2: ObjectId) {
+    const friendship = await this.friends.readOne({
+      $or: [
+        { user1: u1, user2: u2 },
+        { user1: u2, user2: u1 },
+      ],
+    });
+    if (friendship == null || u1.toString() !== u2.toString()) {
+      throw new FriendNotFoundError(u1, u2);
+    }
+  }
+
   private async canSendRequest(u1: ObjectId, u2: ObjectId) {
     await this.assertNotFriends(u1, u2);
     // check if there is pending request between these users

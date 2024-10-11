@@ -89,7 +89,7 @@ export default class DraftingConcept {
       
     let selectedSet=draft.selectedSet
     await this.drafts.partialUpdateOne({ _id }, {selectedSet});
-    return { msg: `Selected set successfully updated to ${String(selectedSet)}!` };
+    return { msg: `Selected set successfully updated to [${String(selectedSet)}]!` };
   }
 
   async deselect(_id: ObjectId, content: string) {
@@ -136,9 +136,18 @@ export default class DraftingConcept {
     }
 
     if (!draft.members.map(String).includes(String(user))) {
-      throw new NotFoundError(`User not in draft`);
+      throw new DraftAuthorNotMatchError(user, _id);  
     }
   }
 
+}
+
+export class DraftAuthorNotMatchError extends NotAllowedError {
+  constructor(
+    public readonly author: ObjectId,
+    public readonly _id: ObjectId,
+  ) {
+    super("{0} is not an author of draft {1}!", author, _id);
+  }
 }
 

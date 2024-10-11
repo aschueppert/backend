@@ -60,13 +60,19 @@ const operations: Operation[] = [
     name: "Get Posts (empty for all)",
     endpoint: "/api/posts",
     method: "GET",
-    fields: { author: "input" },
+    fields: { author: "input" ,theme: "input", status: "input" },
   },
   {
     name: "Get Drafts (empty for all)",
     endpoint: "/api/drafts",
     method: "GET",
     fields: { author: "input" },
+  },
+  {
+    name: "Get Events (empty for all)",
+    endpoint: "/api/events",
+    method: "GET",
+    fields: { host: "input" },
   },
 
   {
@@ -87,6 +93,13 @@ const operations: Operation[] = [
     endpoint: "/api/drafts",
     method: "POST",
     fields: { content: "input" },
+  },
+
+  {
+    name: "Create Event",
+    endpoint: "/api/events",
+    method: "POST",
+    fields: { post_id: "input", location: "input"},
   },
 
   {
@@ -125,6 +138,13 @@ const operations: Operation[] = [
   },
 
   {
+    name: "Set Post Theme",
+    endpoint: "/api/posts/theme/:id",
+    method: "PATCH",
+    fields: { id: "input", theme: "input"},
+  },
+
+  {
     name: "Create Save Label",
     endpoint: "/api/save",
     method: "POST",
@@ -138,6 +158,18 @@ const operations: Operation[] = [
     fields: { post_id: "input", name:"input"},
   },
 
+  {
+    name: "RSVP Event",
+    endpoint: "/api/events/rsvp/:id",
+    method: "PATCH",
+    fields: { event_id: "input"},
+  },
+  {
+    name: "Change Event Location",
+    endpoint: "/api/events/location/:id",
+    method: "PATCH",
+    fields: { event_id: "input", new_location: "input"},
+  },
 
   {
     name: "Delete Post",
@@ -147,10 +179,66 @@ const operations: Operation[] = [
   },
   {
     name: "Delete Draft",
-    endpoint: "/api/drafts/:id",
+    endpoint: "/api/drafts/delete/:id",
     method: "DELETE",
     fields: { id: "input" },
 
+  },
+  {
+    name: "Delete Event",
+    endpoint: "/api/events/delete/:id",
+    method: "DELETE",
+    fields: { id: "input" },
+
+  },
+
+  {
+    name: "Send Friend Request",
+    endpoint: "/api/friend/requests/:to",
+    method: "POST",
+    fields: { to: "input" },
+  },
+
+  {
+    name: "Accept Friend Request",
+    endpoint: "/api/friend/accept/:from",
+    method: "PUT",
+    fields: { from: "input" },
+  },
+  {
+    name: "Reject Friend Request",
+    endpoint: "/api/friend/reject/:from",
+    method: "PUT",
+    fields: { from: "input" },
+  },
+
+  {
+    name: "Remove Friend Request",
+    endpoint: "/api/friend/requests/:to",
+    method: "DELETE",
+    fields: { to: "input" },
+  },
+  //get friend request
+  {
+    name: "Get Friend Requests",
+    endpoint: "/api/friend/requests",
+    method: "GET",
+    fields: {},
+  },
+
+  // get friends 
+  {
+    name: "Get Friends",
+    endpoint: "/api/friends",
+    method: "GET",
+    fields: {},
+  },
+  //remove friend
+  {
+    name: "Remove Friend",
+    endpoint: "/api/friends/:friend",
+    method: "DELETE",
+    fields: { friend: "input" },
   },
   //
   // ...
