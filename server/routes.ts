@@ -320,6 +320,7 @@ class Routes {
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
     await Drafting.assertUserIsMember(oid, user);
+    await Drafting.assertUserIsNotMember(oid, other_id);
     return await Drafting.addMember(oid, other_id);
   }
 

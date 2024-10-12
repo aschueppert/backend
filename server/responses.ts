@@ -54,7 +54,9 @@ export default class Responses {
     const approved = posts.map((post) => post.approved);
     const approve_usernames = approvers.map(async (approve) => await Authing.idsToUsernames(approve));
     const approved_usernames = approved.map(async (approve) => await Authing.idsToUsernames(approve));
-    return posts.map((post, i) => ({ ...post, approvers: approve_usernames[i], approved: approved_usernames[i] }));
+    let usernames1 = await Promise.all(approve_usernames);
+    let usernames2 = await Promise.all(approved_usernames);
+    return posts.map((post, i) => ({ ...post, approvers: usernames1[i], approved: usernames2[i] }));
   }
 
   static async drafts(drafts: DraftDoc[]) {
