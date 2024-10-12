@@ -59,8 +59,9 @@ export default class Responses {
 
   static async drafts(drafts: DraftDoc[]) {
     const members = drafts.map((draft) => draft.members);
-    const member_usernames = members.map(async (member) => await Authing.idsToUsernames(member));
-    return drafts.map((draft, i) => ({ ...draft, members: member_usernames[i] }));
+    const member_usernames = members.map(async (member_set) => await Authing.idsToUsernames(member_set));
+    let usernames = await Promise.all(member_usernames);
+    return drafts.map((draft, i) => ({ ...draft, members: usernames[i] }));
   }
 
   static async follows(follows: FollowDoc[]) {

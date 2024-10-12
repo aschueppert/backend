@@ -70,7 +70,12 @@ class Routes {
     Sessioning.end(session);
     return { msg: "Logged out!" };
   }
-
+  /**
+   * Gets Approved Posts from the users that the current user is following.
+   *
+   * @param session - The session of the user creating the post.
+   * @returns posts - The posts from users that the user is following.
+   */
   @Router.get("/posts")
   async getFollowingPosts(session: SessionDoc) {
     const user = Sessioning.getUser(session);
@@ -81,6 +86,12 @@ class Routes {
     posts = posts.filter((post) => post.status == "approved");
     return posts;
   }
+
+  /**
+   * Gets approved posts from a specific user.
+   * @param session - The session of the user creating the post.
+   * @param username - The username of the user whose posts are being fetched.
+   */
   @Router.get("/posts/:user")
   async getUserPosts(session: SessionDoc, username: string) {
     const user = Sessioning.getUser(session);
@@ -92,6 +103,12 @@ class Routes {
     return Responses.posts(posts);
   }
 
+  /**
+   * Gets approved posts from a specific theme from people the user follows.
+   * @param session - The session of the user
+   * @param theme - The theme of the posts
+   * @returns posts - The posts from the theme.
+   * */
   @Router.get("/themes")
   async getThemePosts(session: SessionDoc, theme: string) {
     const user = Sessioning.getUser(session);
@@ -103,6 +120,11 @@ class Routes {
     return theme_posts;
   }
 
+  /**
+   * Get the users drafts.
+   * @param session - The session of the user
+   * @returns The users drafts.
+   */
   @Router.get("/drafts")
   async getDrafts(session: SessionDoc) {
     const user = Sessioning.getUser(session);
@@ -110,12 +132,23 @@ class Routes {
     return Responses.drafts(drafts);
   }
 
+  /**
+   * Gets items that user has saved
+   * @param session- The session of the user
+   * @returns items - The items that the user has saved
+   */
   @Router.get("/saved")
   async getSaved(session: SessionDoc) {
     const user = Sessioning.getUser(session);
     let saved = await Saving.getByAuthor(user);
     return saved;
   }
+
+  /**
+   * Get events from users that the user is following
+   * @param session - The session of the user
+   * @returns  events - The events from users that the user is following
+   */
   @Router.get("/events")
   async getEvents(session: SessionDoc) {
     let following = await Following.getFollowing(Sessioning.getUser(session));
@@ -124,6 +157,12 @@ class Routes {
     return events;
   }
 
+  /**
+   * Converts a draft into a post.
+   * @param session THe session of the user
+   * @param draft_id Draft to convert
+   * @returns a post with the selected content of the draft
+   */
   @Router.post("/posts")
   async convertDraft(session: SessionDoc, draft_id: string) {
     const user = Sessioning.getUser(session);
@@ -136,6 +175,12 @@ class Routes {
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
+  /**
+   * Creates a draft
+   * @param session THe session of the user
+   * @param content content to add to the draft
+   * @returns Draft with the content
+   */
   @Router.post("/drafts")
   async createDraft(session: SessionDoc, content: string) {
     const user = Sessioning.getUser(session);
@@ -143,6 +188,13 @@ class Routes {
     return { msg: created.msg, draft: await Responses.draft(created.draft) };
   }
 
+  /**
+   * Creates an event
+   * @param session the session of the user
+   * @param post_id the post id to make an event
+   * @param location the location of the event
+   * @returns an event with the hosts=creators of post info=post and the location
+   */
   @Router.post("/events")
   async createEvent(session: SessionDoc, post_id: string, location: string) {
     const user = Sessioning.getUser(session);
@@ -152,6 +204,12 @@ class Routes {
     return await Events.create(hosts, post_oid, location);
   }
 
+  /**
+   * Adds a user to the attendees of an event
+   * @param session the session of the user
+   * @param event_id the id of the event
+   * @returns message that user was added to the event
+   */
   @Router.patch("/events/rsvp/:id")
   async rsvpEvent(session: SessionDoc, event_id: string) {
     const user = Sessioning.getUser(session);
@@ -159,6 +217,13 @@ class Routes {
     return await Events.rsvpEvent(event_oid, user);
   }
 
+  /**
+   * Changes location of event to a new location
+   * @param session the session of the user
+   * @param event_id the id of the event
+   * @param new_location the new location of the event
+   * @returns message that the location was changed
+   */
   @Router.patch("/events/location/:id")
   async changeLocation(session: SessionDoc, event_id: string, new_location: string) {
     const user = Sessioning.getUser(session);
@@ -167,6 +232,13 @@ class Routes {
     return await Events.changeLocation(event_oid, new_location);
   }
 
+  /**
+   * Selects content from contentSet of a draft (add to selectedSet)
+   * @param session the session of the user
+   * @param id the id of the draft
+   * @param content the content to select
+   * @returns msg that content was selected
+   */
   @Router.patch("/drafts/select/:id")
   async selectContent(session: SessionDoc, id: string, content: string) {
     const user = Sessioning.getUser(session);
@@ -175,6 +247,13 @@ class Routes {
     return await Drafting.select(draft_id, content);
   }
 
+  /**
+   * Deselects content from selectedSet of a draft (removes from selected set)
+   * @param session the session of the user
+   * @param id the id of the draft
+   * @param content the content to deselect
+   * @returns msg that content was deselected
+   */
   @Router.patch("/drafts/deselect/:id")
   async deselectContent(session: SessionDoc, id: string, content: string) {
     const user = Sessioning.getUser(session);
@@ -183,6 +262,13 @@ class Routes {
     return await Drafting.deselect(draft_id, content);
   }
 
+  /**
+   * Adds a user (in appovers set of post) to the approved set of a post
+   * @param session the session of the user
+   * @param id the id of the post
+   * @returns msg that user is added
+   */
+
   @Router.patch("/posts/approve/:id")
   async approve(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
@@ -190,7 +276,13 @@ class Routes {
     await Posting.assertUserCanApprove(post_id, user);
     return await Posting.approvePost(post_id, user);
   }
-
+  /**
+   * Sets the theme of a post
+   * @param session the session of the user
+   *  @param id the id of the post
+   * @param theme the theme to set
+   * @returns msg that theme was set
+   * */
   @Router.patch("/posts/theme/:id")
   async setTheme(session: SessionDoc, id: string, theme: string) {
     const user = Sessioning.getUser(session);
@@ -200,6 +292,14 @@ class Routes {
     return await Posting.setTheme(post_id, theme);
   }
 
+  /**
+   * Adds content to contentSet of a draft
+   * @param session the session of the user
+   * @param id the id of the draft
+   * @param content the content to add
+   * @returns msg that content was added
+   * */
+
   @Router.patch("/drafts/add/:id")
   async addContent(session: SessionDoc, id: string, content: string) {
     const user = Sessioning.getUser(session);
@@ -207,6 +307,12 @@ class Routes {
     await Drafting.assertUserIsMember(draft_id, user);
     return await Drafting.addContent(draft_id, content);
   }
+  /** Adds a member to members of draft
+   * @param session the session of the user
+   *  @param id the id of the draft
+   * @param member the member to add
+   * @returns msg that member was added
+   * */
 
   @Router.patch("/drafts/:id")
   async addDraftMember(session: SessionDoc, id: string, member: string) {
@@ -217,6 +323,13 @@ class Routes {
     return await Drafting.addMember(oid, other_id);
   }
 
+  /**
+   * Deletes a post
+   * @param session the session of the user
+   * @param id the id of the post
+   * @returns msg that post was deleted
+   * */
+
   @Router.delete("/posts/delete/:id")
   async deletePost(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
@@ -225,6 +338,12 @@ class Routes {
     return Posting.delete(oid);
   }
 
+  /**
+   * Deletes a draft
+   * @param session the session of the user
+   * @param id the id of the draft
+   * @returns msg that draft was deleted
+   * */
   @Router.delete("/drafts/delete/:id")
   async deleteDraft(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
@@ -232,6 +351,12 @@ class Routes {
     await Drafting.assertUserIsMember(oid, user);
     return Drafting.delete(oid);
   }
+  /**
+   * Deletes an event
+   * @param session the session of the user
+   * @param id the id of the event
+   * @returns msg that event was deleted
+   **/
 
   @Router.delete("/event/delete/:id")
   async deleteEvent(session: SessionDoc, id: string) {
@@ -241,11 +366,26 @@ class Routes {
     return Events.delete(oid);
   }
 
+  /**
+   * Deletes a save
+   * @param session the session of the user
+   * @param id the id of the save
+   * @returns msg that save was deleted
+   **/
+
   @Router.post("/save")
   async createSave(session: SessionDoc, name: string) {
     const user = Sessioning.getUser(session);
     return await Saving.create(user, name);
   }
+
+  /**
+   * Saves an item to a save
+   * @param session the session of the user
+   * @param _id the id of the item
+   * @param name the name of the save
+   * @returns msg that item was saved
+   **/
 
   @Router.patch("/save")
   async saveItem(session: SessionDoc, _id: string, name: string) {
@@ -255,6 +395,12 @@ class Routes {
     return Saving.save(save_oid, oid);
   }
 
+  /**
+   * Deletes a save
+   * @param session the session of the user
+   * @param name the name of the save
+   * @returns msg that save was deleted
+   **/
   @Router.get("/follows")
   async getFollowing(session: SessionDoc) {
     const user = Sessioning.getUser(session);
@@ -262,6 +408,12 @@ class Routes {
     return Responses.follows(created);
   }
 
+  /**
+   * Follows a user
+   * @param session the session of the user
+   * @param username the username of the user to follow
+   * @returns msg that user was followed
+   * */
   @Router.post("/follows")
   async follow(session: SessionDoc, username: string) {
     const user = Sessioning.getUser(session);
@@ -270,6 +422,12 @@ class Routes {
     return await Following.follow(user, following);
   }
 
+  /**
+   * Unfollows a user
+   * @param session the session of the user
+   * @param username the username of the user to unfollow
+   * @returns msg that user was unfollowed
+   * */
   @Router.delete("/follows/:follow")
   async unfollow(session: SessionDoc, username: string) {
     const user = Sessioning.getUser(session);
