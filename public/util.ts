@@ -57,16 +57,31 @@ const operations: Operation[] = [
     fields: { username: "input" },
   },
   {
-    name: "Get Posts (empty for all)",
+    name: "Get Following Posts",
     endpoint: "/api/posts",
     method: "GET",
-    fields: { author: "input" ,theme: "input", status: "input" },
+    fields: {},
   },
+
+  {
+    name: "Get User Posts",
+    endpoint: "/api/posts/:user",
+    method: "GET",
+    fields: { username: "input" },
+  },
+
+  {
+    name: "Get Theme Posts",
+    endpoint: "/api/themes",
+    method: "GET",
+    fields: { theme: "input" },
+  },
+
   {
     name: "Get Drafts",
     endpoint: "/api/drafts",
     method: "GET",
-    fields: { },
+    fields: {},
   },
   {
     name: "Get Events (empty for all)",
@@ -99,76 +114,76 @@ const operations: Operation[] = [
     name: "Create Event",
     endpoint: "/api/events",
     method: "POST",
-    fields: { post_id: "input", location: "input"},
+    fields: { post_id: "input", location: "input" },
   },
 
   {
     name: "Add Draft Members",
     endpoint: "/api/drafts/:id",
     method: "PATCH",
-    fields: { id: "input", member: "input"},
+    fields: { id: "input", member: "input" },
   },
 
   {
     name: "Add Draft Content",
     endpoint: "/api/drafts/add/:id",
     method: "PATCH",
-    fields: { id: "input", content: "input"},
+    fields: { id: "input", content: "input" },
   },
 
   {
     name: "Select Draft Content",
     endpoint: "/api/drafts/select/:id",
     method: "PATCH",
-    fields: { id: "input", content: "input"},
+    fields: { id: "input", content: "input" },
   },
 
   {
     name: "Deselect Draft Content",
     endpoint: "/api/drafts/deselect/:id",
     method: "PATCH",
-    fields: { id: "input", content: "input"},
+    fields: { id: "input", content: "input" },
   },
 
   {
     name: "Approve Post",
     endpoint: "/api/posts/approve/:id",
     method: "PATCH",
-    fields: { id: "input"},
+    fields: { id: "input" },
   },
 
   {
     name: "Set Post Theme",
     endpoint: "/api/posts/theme/:id",
     method: "PATCH",
-    fields: { id: "input", theme: "input"},
+    fields: { id: "input", theme: "input" },
   },
 
   {
     name: "Create Save Label",
     endpoint: "/api/save",
     method: "POST",
-    fields: { name: "input"},
+    fields: { name: "input" },
   },
 
   {
     name: "Save Post",
     endpoint: "/api/save",
     method: "PATCH",
-    fields: { post_id: "input", name:"input"},
+    fields: { post_id: "input", name: "input" },
   },
 
   {
     name: "RSVP Event",
     endpoint: "/api/events/rsvp/:id",
     method: "PATCH",
-    fields: { event_id: "input"},
+    fields: { event_id: "input" },
   },
   {
     name: "Change Event Location",
     endpoint: "/api/events/location/:id",
     method: "PATCH",
-    fields: { event_id: "input", new_location: "input"},
+    fields: { event_id: "input", new_location: "input" },
   },
 
   {
@@ -182,14 +197,12 @@ const operations: Operation[] = [
     endpoint: "/api/drafts/delete/:id",
     method: "DELETE",
     fields: { id: "input" },
-
   },
   {
     name: "Delete Event",
     endpoint: "/api/events/delete/:id",
     method: "DELETE",
     fields: { id: "input" },
-
   },
 
   {
@@ -208,7 +221,7 @@ const operations: Operation[] = [
     name: "Unfollow",
     endpoint: "/api/follows/:follow",
     method: "DELETE",
-    fields: { follow: "input" },
+    fields: { username: "input" },
   },
 ];
 

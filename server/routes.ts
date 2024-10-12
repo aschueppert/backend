@@ -6,10 +6,12 @@ import { Authing, Drafting, Events, Following, Posting, Saving, Sessioning } fro
 import { SessionDoc } from "./concepts/sessioning";
 
 import { z } from "zod";
+import Responses from "./responses";
+Responses.draft;
 
 /**
  * Web server routes for the app. Implements synchronizations between concepts.
- * check 123 
+ * check 123
  */
 class Routes {
   // Synchronize the concepts from `app.ts`.
@@ -70,37 +72,38 @@ class Routes {
   }
 
   @Router.get("/posts")
-  @Router.validate(z.object({ author: z.string().optional() , theme: z.string().optional(), status: z.string().optional()}))
-  async getPosts(session: SessionDoc, author?: string, theme?: string, status?: string) {
+  async getFollowingPosts(session: SessionDoc) {
     const user = Sessioning.getUser(session);
-    let following=await Following.getFollowing(user);
-    let posts = await Posting.getPosts()
-    posts = posts.filter(post =>
-      post.approvers.some(member => following.map(String).includes(String(member)))
-    );
-    if (author) {
-      const id = (await Authing.getUserByUsername(author))._id;
-      let author_posts = await Posting.getByAuthor(id);
-      posts = posts.filter(post => author_posts.map(String).includes(String(post)));
-    } 
-    if (theme) {
-      let theme_posts = await Posting.getByTheme(theme);
-      posts = posts.filter(post => theme_posts.map(String).includes(String(post)));
-    }
-    if (status) {
-      let status_posts= await Posting.getByStatus(status);
-      posts = posts.filter(post => status_posts.map(String).includes(String(post)));
-    }
+    let posts = await Posting.getPosts();
+    let relationships = await Following.getFollowing(user);
+    let following = relationships.map((r) => r.following);
+    posts = posts.filter((post) => post.approvers.some((member) => following.map(String).includes(String(member))));
     return posts;
+  }
+  @Router.get("/posts/:user")
+  async getUserPosts(session: SessionDoc, username: string) {
+    const user = Sessioning.getUser(session);
+    const id = (await Authing.getUserByUsername(username))._id;
+    let posts = await Posting.getByAuthor(id);
+    return Responses.posts(posts);
+  }
+
+  @Router.get("/themes")
+  async getThemePosts(session: SessionDoc, theme: string) {
+    const user = Sessioning.getUser(session);
+    let relationships = await Following.getFollowing(user);
+    let following = relationships.map((r) => r.following);
+    let theme_posts = await Posting.getByTheme(theme);
+    theme_posts = theme_posts.filter((post) => post.approvers.some((member) => following.map(String).includes(String(member))));
+    return theme_posts;
   }
 
   @Router.get("/drafts")
   async getDrafts(session: SessionDoc) {
     const user = Sessioning.getUser(session);
     let drafts = await Drafting.getByMember(user);
-    return drafts;
+    return Responses.drafts(drafts);
   }
-
 
   @Router.get("/saved")
   async getSaved(session: SessionDoc) {
@@ -110,56 +113,51 @@ class Routes {
   }
   @Router.get("/events")
   @Router.validate(z.object({ host: z.string().optional() }))
-  async getEvents(session: SessionDoc,host?: string) {
-    let following=await Following.getFollowing(Sessioning.getUser(session));
-    let events = await Events.getEvents()
-    events = events.filter(event =>
-      event.hosts.some(member => following.map(String).includes(String(member)))
-    );
+  async getEvents(session: SessionDoc, host?: string) {
+    let following = await Following.getFollowing(Sessioning.getUser(session));
+    let events = await Events.getEvents();
+    events = events.filter((event) => event.hosts.some((member) => following.map(String).includes(String(member))));
     if (host) {
       const id = (await Authing.getUserByUsername(host))._id;
       let host_events = await Events.getByHost(id);
-      events = events.filter(event => host_events.map(String).includes(String(event)));
-    } 
+      events = events.filter((event) => host_events.map(String).includes(String(event)));
+    }
     return events;
   }
 
-
   @Router.post("/posts")
-  async convertDraft(session:SessionDoc,draft_id:string){
+  async convertDraft(session: SessionDoc, draft_id: string) {
     const user = Sessioning.getUser(session);
     const draft_oid = new ObjectId(draft_id);
     await Drafting.assertUserIsMember(draft_oid, user);
-    const content=await Drafting.getContent(draft_oid)
-    const members=await Drafting.getMembers(draft_oid)
+    const content = await Drafting.getContent(draft_oid);
+    const members = await Drafting.getMembers(draft_oid);
     const created = await Posting.create(members, content);
     await Drafting.delete(draft_oid);
-    return created;
-    
+    return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
-
   @Router.post("/drafts")
-  async createDraft(session: SessionDoc,content: string,) {
+  async createDraft(session: SessionDoc, content: string) {
     const user = Sessioning.getUser(session);
     const created = await Drafting.create(user, content);
-    return created;
+    return { msg: created.msg, draft: await Responses.draft(created.draft) };
   }
 
   @Router.post("/events")
-  async createEvent(session: SessionDoc, post_id:string, location: string) {
+  async createEvent(session: SessionDoc, post_id: string, location: string) {
     const user = Sessioning.getUser(session);
     const post_oid = new ObjectId(post_id);
     await Posting.assertUserIsApprover(post_oid, user);
-    const hosts=await Posting.getApprovers(post_oid)
-    return await Events.create(hosts,post_oid,location);
+    const hosts = await Posting.getApprovers(post_oid);
+    return await Events.create(hosts, post_oid, location);
   }
 
   @Router.patch("/events/rsvp/:id")
-  async rsvpEvent(session: SessionDoc, event_id:string) {
+  async rsvpEvent(session: SessionDoc, event_id: string) {
     const user = Sessioning.getUser(session);
     const event_oid = new ObjectId(event_id);
-    return await Events.rsvpEvent(event_oid,user);
+    return await Events.rsvpEvent(event_oid, user);
   }
 
   @Router.patch("/events/location/:id")
@@ -167,7 +165,7 @@ class Routes {
     const user = Sessioning.getUser(session);
     const event_oid = new ObjectId(event_id);
     await Events.assertUserIsHost(event_oid, user);
-    return await Events.changeLocation(event_oid,new_location);
+    return await Events.changeLocation(event_oid, new_location);
   }
 
   @Router.patch("/drafts/select/:id")
@@ -175,7 +173,7 @@ class Routes {
     const user = Sessioning.getUser(session);
     const draft_id = new ObjectId(id);
     await Drafting.assertUserIsMember(draft_id, user);
-    return await Drafting.select(draft_id,content);
+    return await Drafting.select(draft_id, content);
   }
 
   @Router.patch("/drafts/deselect/:id")
@@ -183,7 +181,7 @@ class Routes {
     const user = Sessioning.getUser(session);
     const draft_id = new ObjectId(id);
     await Drafting.assertUserIsMember(draft_id, user);
-    return await Drafting.deselect(draft_id,content);
+    return await Drafting.deselect(draft_id, content);
   }
 
   @Router.patch("/posts/approve/:id")
@@ -191,34 +189,33 @@ class Routes {
     const user = Sessioning.getUser(session);
     const post_id = new ObjectId(id);
     await Posting.assertUserCanApprove(post_id, user);
-    return await Posting.approvePost(post_id,user);
+    return await Posting.approvePost(post_id, user);
   }
 
   @Router.patch("/posts/theme/:id")
-  async setTheme(session: SessionDoc, id: string, theme:string) {
+  async setTheme(session: SessionDoc, id: string, theme: string) {
     const user = Sessioning.getUser(session);
     const post_id = new ObjectId(id);
-    await Posting.assertUserCanApprove(post_id, user);
+    await Posting.assertUserIsApprover(post_id, user);
     await Posting.assertThemeIsValid(theme);
-    return await Posting.setTheme(post_id,theme);
+    return await Posting.setTheme(post_id, theme);
   }
-
 
   @Router.patch("/drafts/add/:id")
   async addContent(session: SessionDoc, id: string, content: string) {
     const user = Sessioning.getUser(session);
     const draft_id = new ObjectId(id);
     await Drafting.assertUserIsMember(draft_id, user);
-    return await Drafting.addContent(draft_id,content);
+    return await Drafting.addContent(draft_id, content);
   }
-  
+
   @Router.patch("/drafts/:id")
   async addDraftMember(session: SessionDoc, id: string, member: string) {
     const other_id = (await Authing.getUserByUsername(member))._id;
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
     await Drafting.assertUserIsMember(oid, user);
-    return await Drafting.addMember(oid,other_id);
+    return await Drafting.addMember(oid, other_id);
   }
 
   @Router.delete("/posts/delete/:id")
@@ -245,19 +242,18 @@ class Routes {
     return Events.delete(oid);
   }
 
-
   @Router.post("/save")
   async createSave(session: SessionDoc, name: string) {
     const user = Sessioning.getUser(session);
-    return await Saving.create(user,name);
+    return await Saving.create(user, name);
   }
-  
+
   @Router.patch("/save")
-  async saveItem(session: SessionDoc, _id:string, name: string, ) {
+  async saveItem(session: SessionDoc, _id: string, name: string) {
     const oid = new ObjectId(_id);
     const user = Sessioning.getUser(session);
-    const save_oid= (await Saving.getSave(user,name))._id;
-    return Saving.save(save_oid,oid);
+    const save_oid = (await Saving.getSave(user, name))._id;
+    return Saving.save(save_oid, oid);
   }
 
   @Router.get("/follows")
@@ -266,9 +262,8 @@ class Routes {
     return await Following.getFollowing(user);
   }
 
-  
   @Router.post("/follows")
-  async follow(session: SessionDoc, username:string) {
+  async follow(session: SessionDoc, username: string) {
     const user = Sessioning.getUser(session);
     const following = (await Authing.getUserByUsername(username))._id;
     await Following.assertIsNotFollowing(user, following);
@@ -282,8 +277,6 @@ class Routes {
     await Following.assertIsFollowing(user, friendOid);
     return await Following.unfollow(user, friendOid);
   }
-
-
 }
 
 /** The web app. */

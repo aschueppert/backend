@@ -7,7 +7,6 @@ export interface FollowDoc extends BaseDoc {
   following: ObjectId;
 }
 
-
 /**
  * concept: Following [User]
  */
@@ -20,7 +19,7 @@ export default class FriendingConcept {
   constructor(collectionName: string) {
     this.relationships = new DocCollection<FollowDoc>(collectionName);
   }
-  
+
   async getFollowers(user: ObjectId) {
     return await this.relationships.readMany({ followee: user });
   }
@@ -40,35 +39,27 @@ export default class FriendingConcept {
   }
 
   async assertIsFollowing(follower: ObjectId, following: ObjectId) {
-    const relationship = await this.relationships.readOne({ follower
-    , following });
+    const relationship = await this.relationships.readOne({ follower, following });
     if (relationship == null) {
       throw new NotFollowingError(following);
     }
   }
   async assertIsNotFollowing(follower: ObjectId, following: ObjectId) {
-    const relationship = await this.relationships.readOne({ follower
-    , following });
+    const relationship = await this.relationships.readOne({ follower, following });
     if (relationship != null) {
       throw new AlreadyFollowingError(following);
     }
   }
-
 }
 
-
 export class NotFollowingError extends NotFoundError {
-  constructor(
-    public readonly user2: ObjectId,
-  ) {
+  constructor(public readonly user2: ObjectId) {
     super("Not following {0}", user2);
   }
 }
 
 export class AlreadyFollowingError extends NotAllowedError {
-  constructor(
-    public readonly user2: ObjectId,
-  ) {
+  constructor(public readonly user2: ObjectId) {
     super("Alreadying following {0}!", user2);
   }
 }
