@@ -78,6 +78,7 @@ class Routes {
     let relationships = await Following.getFollowing(user);
     let following = relationships.map((r) => r.following);
     posts = posts.filter((post) => post.approvers.some((member) => following.map(String).includes(String(member))));
+    posts = posts.filter((post) => post.status == "approved");
     return posts;
   }
   @Router.get("/posts/:user")
@@ -85,6 +86,9 @@ class Routes {
     const user = Sessioning.getUser(session);
     const id = (await Authing.getUserByUsername(username))._id;
     let posts = await Posting.getByAuthor(id);
+    if (String(id) != String(user)) {
+      posts = posts.filter((post) => post.status == "approved");
+    }
     return Responses.posts(posts);
   }
 
@@ -95,6 +99,7 @@ class Routes {
     let following = relationships.map((r) => r.following);
     let theme_posts = await Posting.getByTheme(theme);
     theme_posts = theme_posts.filter((post) => post.approvers.some((member) => following.map(String).includes(String(member))));
+    theme_posts = theme_posts.filter((post) => post.status == "approved");
     return theme_posts;
   }
 
@@ -112,16 +117,10 @@ class Routes {
     return saved;
   }
   @Router.get("/events")
-  @Router.validate(z.object({ host: z.string().optional() }))
-  async getEvents(session: SessionDoc, host?: string) {
+  async getEvents(session: SessionDoc) {
     let following = await Following.getFollowing(Sessioning.getUser(session));
     let events = await Events.getEvents();
     events = events.filter((event) => event.hosts.some((member) => following.map(String).includes(String(member))));
-    if (host) {
-      const id = (await Authing.getUserByUsername(host))._id;
-      let host_events = await Events.getByHost(id);
-      events = events.filter((event) => host_events.map(String).includes(String(event)));
-    }
     return events;
   }
 
@@ -259,7 +258,8 @@ class Routes {
   @Router.get("/follows")
   async getFollowing(session: SessionDoc) {
     const user = Sessioning.getUser(session);
-    return await Following.getFollowing(user);
+    let created = await Following.getFollowing(user);
+    return Responses.follows(created);
   }
 
   @Router.post("/follows")

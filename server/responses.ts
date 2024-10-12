@@ -1,7 +1,7 @@
 import { Authing } from "./app";
 import { DraftAuthorNotMatchError, DraftDoc } from "./concepts/drafting";
 import { EventHostNotMatchError } from "./concepts/events";
-import { AlreadyFollowingError, NotFollowingError } from "./concepts/following";
+import { AlreadyFollowingError, FollowDoc, NotFollowingError } from "./concepts/following";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/posting";
 import { SaveAuthorNotMatchError } from "./concepts/saving";
 import { Router } from "./framework/router";
@@ -35,29 +35,39 @@ export default class Responses {
     let usernames = full_members.map((member) => member.username);
     return { ...draft, members: usernames };
   }
+  static async follow(follow: FollowDoc | null) {
+    if (!follow) {
+      return follow;
+    }
+    let follower = await Authing.getUserById(follow.follower);
+    let followee = await Authing.getUserById(follow.following);
+    let follower_username = follower.username;
+    let followee_username = followee.username;
+    return { ...follow, follower: follower_username, followee: followee_username };
+  }
 
   /**
    * Same as {@link post} but for an array of PostDoc for improved performance.
    */
   static async posts(posts: PostDoc[]) {
-    const allAuthors = await Authing.idsToUsernames(posts.map((post) => post.approvers).flat());
-    const allApproved = await Authing.idsToUsernames(posts.map((post) => post.approved).flat());
-    let authorIndex = 0;
-    let approvedIndex = 0;
-    return posts.map((post) => {
-      const authorsForPost = post.approvers.map(() => allAuthors[authorIndex++]);
-      const approvedForPost = post.approved.map(() => allApproved[approvedIndex++]);
-      return { ...post, approvers: authorsForPost, approved: approvedForPost };
-    });
+    const approvers = posts.map((post) => post.approvers);
+    const approved = posts.map((post) => post.approved);
+    const approve_usernames = approvers.map(async (approve) => await Authing.idsToUsernames(approve));
+    const approved_usernames = approved.map(async (approve) => await Authing.idsToUsernames(approve));
+    return posts.map((post, i) => ({ ...post, approvers: approve_usernames[i], approved: approved_usernames[i] }));
   }
 
   static async drafts(drafts: DraftDoc[]) {
-    const allAuthors = await Authing.idsToUsernames(drafts.map((draft) => draft.members).flat());
-    let authorIndex = 0;
-    return drafts.map((draft) => {
-      const membersforDraft = draft.members.map(() => allAuthors[authorIndex++]);
-      return { ...draft, members: membersforDraft };
-    });
+    const members = drafts.map((draft) => draft.members);
+    const member_usernames = members.map(async (member) => await Authing.idsToUsernames(member));
+    return drafts.map((draft, i) => ({ ...draft, members: member_usernames[i] }));
+  }
+
+  static async follows(follows: FollowDoc[]) {
+    const followers = follows.map((follow) => follow.follower);
+    const followees = follows.map((follow) => follow.following);
+    const usernames = await Authing.idsToUsernames(followers.concat(followees));
+    return follows.map((follow, i) => ({ ...follow, follower: usernames[i], followee: usernames[i + follows.length] }));
   }
 }
 
