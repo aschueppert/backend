@@ -227,6 +227,7 @@ class Routes {
     const user = Sessioning.getUser(session);
     const event_oid = new ObjectId(event_id);
     await Posting.assertIsApproved(await Events.getInfo(event_oid));
+    await Events.assertIsNotAttending(event_oid, user);
     return await Events.rsvpEvent(event_oid, user);
   }
 

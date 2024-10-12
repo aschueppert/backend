@@ -88,8 +88,16 @@ export default class EventsConcept {
       throw new NotFoundError(`User ${user} is not a host of event ${_id}!`);
     }
   }
+  async assertIsNotAttending(_id: ObjectId, user: ObjectId) {
+    const event = await this.events.readOne({ _id });
+    if (!event) {
+      throw new NotFoundError(`Event ${_id} does not exist!`);
+    }
+    if (event.attendees.map(String).includes(String(user))) {
+      throw new NotAllowedError(`Already attending event ${_id}!`);
+    }
+  }
 }
-
 export class EventHostNotMatchError extends NotAllowedError {
   constructor(
     public readonly host: ObjectId,

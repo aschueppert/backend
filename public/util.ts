@@ -57,21 +57,21 @@ const operations: Operation[] = [
     fields: { username: "input" },
   },
   {
-    name: "Get Following Posts",
+    name: "Get Approved Following Posts",
     endpoint: "/api/posts",
     method: "GET",
     fields: {},
   },
 
   {
-    name: "Get User Posts",
+    name: "Get Appoved User Posts (Can view own unapproved posts)",
     endpoint: "/api/posts/:user",
     method: "GET",
     fields: { username: "input" },
   },
 
   {
-    name: "Get Theme Posts",
+    name: "Get Approved Theme Posts",
     endpoint: "/api/themes",
     method: "GET",
     fields: { theme: "input" },
@@ -84,14 +84,14 @@ const operations: Operation[] = [
     fields: {},
   },
   {
-    name: "Get Events",
+    name: "Get All Approved Events",
     endpoint: "/api/events",
     method: "GET",
     fields: {},
   },
 
   {
-    name: "Get My Events",
+    name: "Get My Events (Approved and Not Approved)",
     endpoint: "/api/events/me",
     method: "GET",
     fields: {},
