@@ -145,16 +145,27 @@ class Routes {
   }
 
   /**
-   * Get events from users that the user is following
+   * Get events of approved posts from all users
    * @param session - The session of the user
    * @returns  events - The events from users that the user is following
    */
   @Router.get("/events")
-  async getEvents(session: SessionDoc) {
-    let following = await Following.getFollowing(Sessioning.getUser(session));
+  async getAllEvents() {
     let events = await Events.getEvents();
-    events = events.filter((event) => event.hosts.some((member) => following.map(String).includes(String(member))));
-    return events;
+    let filter_events = await Promise.all(
+      events.map(async (event) => ({
+        event,
+        isApproved: (await Posting.getStatus(event.info)) === "Approved",
+      })),
+    );
+    let filtered_events = filter_events.filter(({ isApproved }) => isApproved).map(({ event }) => event);
+    return Responses.events(filtered_events);
+  }
+  @Router.get("/events/me")
+  async getMyEvents(session: SessionDoc) {
+    let user = Sessioning.getUser(session);
+    let events = await Events.getByHost(user);
+    return Responses.events(events);
   }
 
   /**
@@ -201,19 +212,21 @@ class Routes {
     const post_oid = new ObjectId(post_id);
     await Posting.assertUserIsApprover(post_oid, user);
     const hosts = await Posting.getApprovers(post_oid);
-    return await Events.create(hosts, post_oid, location);
+    let created = await Events.create(hosts, post_oid, location);
+    return { msg: created.msg, event: await Responses.event(created.event) };
   }
 
   /**
    * Adds a user to the attendees of an event
    * @param session the session of the user
    * @param event_id the id of the event
-   * @returns message that user was added to the event
+   * @returns message that user was added to the vent
    */
   @Router.patch("/events/rsvp/:id")
   async rsvpEvent(session: SessionDoc, event_id: string) {
     const user = Sessioning.getUser(session);
     const event_oid = new ObjectId(event_id);
+    await Posting.assertIsApproved(await Events.getInfo(event_oid));
     return await Events.rsvpEvent(event_oid, user);
   }
 

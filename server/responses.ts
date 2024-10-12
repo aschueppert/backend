@@ -1,6 +1,6 @@
 import { Authing } from "./app";
 import { DraftAuthorNotMatchError, DraftDoc } from "./concepts/drafting";
-import { EventHostNotMatchError } from "./concepts/events";
+import { EventDoc, EventHostNotMatchError } from "./concepts/events";
 import { AlreadyFollowingError, FollowDoc, NotFollowingError } from "./concepts/following";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/posting";
 import { SaveAuthorNotMatchError } from "./concepts/saving";
@@ -34,6 +34,18 @@ export default class Responses {
     let full_members = await Promise.all(members);
     let usernames = full_members.map((member) => member.username);
     return { ...draft, members: usernames };
+  }
+
+  static async event(event: EventDoc | null) {
+    if (!event) {
+      return event;
+    }
+    let hosts = event.hosts.map(async (host) => await Authing.getUserById(host));
+    let all_hosts = await Promise.all(hosts);
+    let host_usernames = all_hosts.map((host) => host.username);
+    let all_attendees = event.attendees.map(async (attendee) => await Authing.getUserById(attendee));
+    let attendees_usernames = (await Promise.all(all_attendees)).map((attendee) => attendee.username);
+    return { ...event, hosts: host_usernames, attendees: attendees_usernames };
   }
   static async follow(follow: FollowDoc | null) {
     if (!follow) {
@@ -70,7 +82,16 @@ export default class Responses {
     const followers = follows.map((follow) => follow.follower);
     const followees = follows.map((follow) => follow.following);
     const usernames = await Authing.idsToUsernames(followers.concat(followees));
-    return follows.map((follow, i) => ({ ...follow, follower: usernames[i], followee: usernames[i + follows.length] }));
+    return follows.map((follow, i) => ({ ...follow, follower: usernames[i], following: usernames[i + follows.length] }));
+  }
+  static async events(events: EventDoc[]) {
+    const hosts = events.map((event) => event.hosts);
+    const attendees = events.map((event) => event.attendees);
+    const host_usernames = hosts.map(async (host_set) => await Authing.idsToUsernames(host_set));
+    const attendee_usernames = attendees.map(async (attendee_set) => await Authing.idsToUsernames(attendee_set));
+    let hostnames = await Promise.all(host_usernames);
+    let attendeenames = await Promise.all(attendee_usernames);
+    return events.map((event, i) => ({ ...event, hosts: hostnames[i], attendees: attendeenames[i] }));
   }
 }
 

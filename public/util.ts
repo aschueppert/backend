@@ -84,10 +84,17 @@ const operations: Operation[] = [
     fields: {},
   },
   {
-    name: "Get Events (empty for all)",
+    name: "Get Events",
     endpoint: "/api/events",
     method: "GET",
-    fields: { host: "input" },
+    fields: {},
+  },
+
+  {
+    name: "Get My Events",
+    endpoint: "/api/events/me",
+    method: "GET",
+    fields: {},
   },
 
   {

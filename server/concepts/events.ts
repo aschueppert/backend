@@ -3,12 +3,10 @@ import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { NotAllowedError, NotFoundError } from "./errors";
 
-
-
 export interface EventDoc extends BaseDoc {
   hosts: Array<ObjectId>;
   attendees: Array<ObjectId>;
-  location:String;
+  location: String;
   info: ObjectId;
 }
 
@@ -26,8 +24,8 @@ export default class EventsConcept {
   }
 
   async create(hosts: Array<ObjectId>, info: ObjectId, location: String) {
-    const attendees=new Array<ObjectId>()
-    const _id = await this.events.createOne({ hosts, attendees, location, info});
+    const attendees = new Array<ObjectId>();
+    const _id = await this.events.createOne({ hosts, attendees, location, info });
     return { msg: "Event successfully created!", event: await this.events.readOne({ _id }) };
   }
 
@@ -36,28 +34,35 @@ export default class EventsConcept {
     return await this.events.readMany({}, { sort: { _id: -1 } });
   }
 
-  async changeLocation(_id: ObjectId, location: String){
-    const event=await this.events.readOne({_id }) 
+  async getInfo(_id: ObjectId) {
+    const event = await this.events.readOne({ _id });
     if (!event) {
       throw new NotFoundError(`Event ${_id} does not exist!`);
     }
-    await this.events.partialUpdateOne({_id }, {location});
-    return { msg:`Location changed to ${_id}`};
+    return event.info;
   }
 
-  
-   async rsvpEvent(_id: ObjectId, user: ObjectId){
-      const event=await this.events.readOne({_id }) 
-      if (!event) {
-          throw new NotFoundError(`Event ${_id} does not exist!`);
-      }
-      event.attendees.push(user)
-      await this.events.partialUpdateOne({_id }, {attendees: event.attendees});
-      return { msg: "RSVP successful!" };
-   }
+  async changeLocation(_id: ObjectId, location: String) {
+    const event = await this.events.readOne({ _id });
+    if (!event) {
+      throw new NotFoundError(`Event ${_id} does not exist!`);
+    }
+    await this.events.partialUpdateOne({ _id }, { location });
+    return { msg: `Location changed to ${_id}` };
+  }
+
+  async rsvpEvent(_id: ObjectId, user: ObjectId) {
+    const event = await this.events.readOne({ _id });
+    if (!event) {
+      throw new NotFoundError(`Event ${_id} does not exist!`);
+    }
+    event.attendees.push(user);
+    await this.events.partialUpdateOne({ _id }, { attendees: event.attendees });
+    return { msg: "RSVP successful!" };
+  }
 
   async getByHost(host: ObjectId) {
-    return await this.events.readMany({hosts: host});
+    return await this.events.readMany({ hosts: host });
   }
 
   async getAttendees(_id: ObjectId) {
@@ -65,8 +70,7 @@ export default class EventsConcept {
     if (!event) {
       throw new NotFoundError(`Event ${_id} does not exist!`);
     }
-    return event.attendees; 
-
+    return event.attendees;
   }
 
   async delete(_id: ObjectId) {
@@ -81,10 +85,9 @@ export default class EventsConcept {
     }
 
     if (!event.hosts.map(String).includes(String(user))) {
-      throw new NotFoundError(`User ${user} is not a host of event ${_id}!`);  
+      throw new NotFoundError(`User ${user} is not a host of event ${_id}!`);
     }
   }
-
 }
 
 export class EventHostNotMatchError extends NotAllowedError {
